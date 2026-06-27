@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camp Activity Optimizer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a18; min-height: 100vh; }
+header { background: #2d5a27; color: white; padding: 1.25rem 2rem; display: flex; align-items: center; gap: 12px; }
+header h1 { font-size: 1.3rem; font-weight: 600; }
+header p { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+.tabs { display: flex; background: white; border-bottom: 1px solid #ddd; padding: 0 2rem; overflow-x: auto; }
+.tab { padding: 0.85rem 1.25rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; color: #666; white-space: nowrap; }
+.tab.active { border-bottom-color: #2d5a27; color: #2d5a27; }
+.page { display: none; padding: 1.5rem 2rem; max-width: 1150px; margin: 0 auto; }
+.page.active { display: block; }
+.card { background: white; border-radius: 10px; border: 1px solid #e8e8e4; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
+.card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: #2d5a27; }
+label { font-size: 0.825rem; color: #555; font-weight: 500; display: block; margin-bottom: 4px; }
+input[type=number], input[type=text], select { border: 1px solid #d8d8d4; border-radius: 6px; padding: 7px 10px; font-size: 0.875rem; background: white; color: #1a1a18; width: 100%; }
+.btn { padding: 9px 20px; border-radius: 7px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid #ccc; background: white; color: #333; }
+.btn-primary { background: #2d5a27; color: white; border-color: #2d5a27; }
+.btn-primary:hover { background: #234820; }
+.btn-danger { background: #c0392b; color: white; border-color: #c0392b; }
+.btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+.btn-ghost { background: transparent; border-color: transparent; color: #888; font-size: 0.8rem; padding: 4px 8px; }
+.btn-ghost:hover { color: #333; }
+
+.cap-table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+.cap-table th { background: #f0f5ef; padding: 8px 6px; text-align: center; font-weight: 600; color: #2d5a27; border: 1px solid #ddd; font-size: 0.775rem; }
+.cap-table td { padding: 5px 6px; border: 1px solid #eee; }
+.cap-table td:first-child { font-weight: 500; color: #333; background: #fafaf8; padding-left: 10px; }
+.cap-table input { width: 48px; text-align: center; padding: 4px; }
+
+.cabin-group { margin-bottom: 1.25rem; }
+.group-header { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+.group-badge { padding: 3px 12px; border-radius: 20px; font-size: 0.775rem; font-weight: 700; letter-spacing: 0.03em; }
+.badge-guy { background: #dbeafe; color: #1e40af; }
+.badge-girl { background: #fce7f3; color: #9d174d; }
+
+.cabin-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid #e8e8e4; border-radius: 7px; margin-bottom: 5px; background: white; }
+.cabin-row.disabled { opacity: 0.45; background: #f5f5f0; }
+.cabin-check { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #2d5a27; }
+.cabin-name-disp { font-weight: 600; font-size: 0.875rem; min-width: 36px; }
+.cabin-order-label { font-size: 0.775rem; color: #888; }
+.cabin-order-sel { width: 80px; font-size: 0.8rem; padding: 3px 5px; }
+.rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 1rem; margin-top: 0.5rem; }
+.rank-row { display: flex; align-items: center; gap: 7px; }
+.rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; flex-shrink: 0; }
+.rb-top { background: #d4edda; color: #155724; }
+.rb-bot { background: #f8d7da; color: #721c24; }
+.rb-mid { background: #fff3cd; color: #856404; }
+.rb-neu { background: #e9ecef; color: #495057; }
+.rank-row label { margin: 0; flex: 1; font-size: 0.785rem; }
+.rank-row select { width: 64px; font-size: 0.775rem; padding: 3px 4px; }
+
+.cabin-entry { border: 1px solid #e8e8e4; border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 0.6rem; background: #fafaf8; }
+.cabin-entry.disabled-entry { opacity: 0.4; pointer-events: none; }
+.cabin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.order-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+.ob-guy { background: #dbeafe; color: #1e40af; }
+.ob-girl { background: #fce7f3; color: #9d174d; }
+
+.schedule-table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+.schedule-table th { background: #2d5a27; color: white; padding: 8px 10px; text-align: left; font-weight: 500; }
+.schedule-table td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+.cabin-pill { display: inline-block; background: #e8f5e4; color: #1a5c14; border-radius: 4px; padding: 2px 7px; margin: 2px; font-size: 0.775rem; font-weight: 500; }
+.cabin-pill.repeat { background: #fff3cd; color: #856404; }
+.score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.score-card { background: white; border: 1px solid #e8e8e4; border-radius: 8px; padding: 0.875rem; text-align: center; }
+.score-card .val { font-size: 1.5rem; font-weight: 700; color: #2d5a27; }
+.score-card .lbl { font-size: 0.75rem; color: #888; margin-top: 2px; }
+.sat-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.sat-table th { background: #f5f5f0; padding: 7px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+.sat-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0ec; }
+.bar-wrap { height: 6px; background: #e0e0d8; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: #2d5a27; }
+.alert { padding: 10px 14px; border-radius: 7px; font-size: 0.825rem; margin-bottom: 1rem; }
+.alert-info { background: #e8f4fd; color: #1a5276; border: 1px solid #aed6f1; }
+.alert-warn { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+.how-section { border-left: 3px solid #2d5a27; padding-left: 1rem; margin-bottom: 1.25rem; }
+.how-section p { font-size: 0.875rem; color: #444; line-height: 1.65; margin-bottom: 0.5rem; }
+.how-section ul { font-size: 0.875rem; color: #444; line-height: 1.7; padding-left: 1.2rem; }
+.tech-toggle { font-size: 0.825rem; color: #2d5a27; cursor: pointer; font-weight: 500; border: none; background: none; padding: 0; text-decoration: underline; }
+.formula-box { background: #f0f5ef; border-radius: 7px; padding: 0.875rem 1rem; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #1a3a17; margin: 0.5rem 0; line-height: 1.7; }
+.pill-guy { display: inline-block; background: #dbeafe; color: #1e40af; border-radius: 4px; padding: 1px 7px; font-size: 0.775rem; font-weight: 600; }
+.pill-girl { display: inline-block; background: #fce7f3; color: #9d174d; border-radius: 4px; padding: 1px 7px; font-size: 0.775rem; font-weight: 600; }
+.section-divider { border: none; border-top: 1px solid #e8e8e4; margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.6rem">&#127794;</span>
+  <div>
+    <h1>Camp Activity Optimizer</h1>
+    <p>Intelligent weekly activity scheduling for 24 cabins across 8 slots</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-how" onclick="showTab('how')">How It Works</div>
+  <div class="tab" id="tab-setup" onclick="showTab('setup')">Setup</div>
+  <div class="tab" id="tab-cabins" onclick="showTab('cabins')">Cabin Preferences</div>
+  <div class="tab" id="tab-optimize" onclick="showTab('optimize')">Optimize</div>
+  <div class="tab" id="tab-results" onclick="showTab('results')">Results</div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div id="page-how" class="page active">
+  <div class="card">
+    <h2 style="font-size:1.1rem;margin-bottom:0.25rem">How the Optimizer Works</h2>
+    <p style="font-size:0.825rem;color:#888;margin-bottom:1.25rem">Two views: plain-language summary and full technical detail.</p>
+
+    <div class="how-section">
+      <h3>Abstract (plain language)</h3>
+      <p>Each week, 24 cabins rank 13 activities from most to least preferred. The optimizer's job is to assign every cabin to exactly one activity per time slot — 8 slots across Monday through Friday — in a way that makes as many cabins as possible happy.</p>
+      <p>The key insight is that <strong>not all ranks are equal</strong>. A cabin's top choices matter far more than their middle ones, and their bottom two choices should be avoided at almost any cost. The optimizer treats a cabin's #1 pick as extremely valuable, their #2 and #3 as very valuable, and the last two as something to avoid. Everything in between scales smoothly.</p>
+      <p>Two important real-world constraints are baked in: <strong>Pool is penalized in morning slots</strong> (nobody wants to swim at 9am), and <strong>cabins should not repeat an activity</strong> across the week — if a cabin already did Archery on Monday, the optimizer will strongly avoid putting them in Archery again later in the week.</p>
+      <p>Early slip submitters get a tiny tiebreaker advantage — when two cabins are equally well-served by an activity, the one that submitted first wins the spot.</p>
+      <p>The algorithm runs many random starting points and refines each one through thousands of small improvements, keeping the best result it finds.</p>
+    </div>
+
+    <button class="tech-toggle" onclick="toggleTech()">&#9660; Show technical detail</button>
+
+    <div id="tech-section" style="display:none;margin-top:1.25rem">
+      <div class="how-section">
+        <h3>Scoring function</h3>
+        <p>Every cabin-activity-slot assignment earns a score. The total schedule score is the sum of all individual assignment scores. The optimizer maximizes this total.</p>
+        <p>For cabin <em>c</em> assigned to activity <em>a</em> in slot <em>s</em>, where <em>r</em> is the cabin's rank for that activity (1=best, 13=worst):</p>
+        <div class="formula-box">
+base_score  = 14 - r                         // 13 pts for rank 1, 1 pt for rank 13
+
+top3_bonus  = if r &lt;= 3: (4 - r) * TOP3_MULT  // rank1=+9, rank2=+6, rank3=+3
+bot2_penalty= if r &gt;= 12: (r - 11) * BOT2_MULT // rank12=-4, rank13=-8
+
+pool_penalty= if activity=Pool AND slot=morning: -POOL_PENALTY
+
+repeat_pen  = -REPEAT_PENALTY * (times already assigned this activity)
+
+tiebreak    = (num_cabins - submission_order_index) * 0.001
+
+TOTAL = base_score + top3_bonus - bot2_penalty - pool_penalty - repeat_pen + tiebreak
+        </div>
+        <p>Default multipliers: TOP3_MULT=3, BOT2_MULT=4, POOL_PENALTY=15, REPEAT_PENALTY=30. All adjustable on the Optimize tab.</p>
+      </div>
+
+      <div class="how-section">
+        <h3>Rank score curve</h3>
+        <p>With default weights, the effective score per rank position (before slot/repeat modifiers) is:</p>
+        <div class="formula-box">
+Rank  1: +22 pts  (base 13 + top3 bonus 9)
+Rank  2: +17 pts  (base 12 + top3 bonus 6) -- note steep drop from rank 1
+Rank  3: +14 pts  (base 11 + top3 bonus 3)
+Rank  4:  +10 pts  (base 10, no bonus/penalty)
+...linear...
+Rank 11:  +3 pts
+Rank 12:  -2 pts  (base 2 - bot2 penalty 4)
+Rank 13:  -7 pts  (base 1 - bot2 penalty 8)
+        </div>
+        <p>This creates a steep reward at the top, a steep penalty at the bottom, and a smooth linear middle — exactly matching the stated preferences.</p>
+      </div>
+
+      <div class="how-section">
+        <h3>Capacity constraints</h3>
+        <p>Each activity has a configurable maximum capacity per slot. The optimizer never exceeds these caps. If an activity is set to 0 for a slot it is unavailable in that slot. Cabins that cannot be placed in any available-capacity activity for a given slot are left unassigned for that slot.</p>
+      </div>
+
+      <div class="how-section">
+        <h3>Algorithm: randomized greedy + hill climbing with restarts</h3>
+        <p><strong>Phase 1 — Greedy construction:</strong> For each slot, iterate through cabins in a shuffled order. For each cabin, score every available activity (respecting capacity) using the scoring function above plus a small random jitter. Assign the cabin to the highest-scoring available activity. This produces a valid but imperfect schedule.</p>
+        <p><strong>Phase 2 — Hill climbing:</strong> Repeatedly pick two random activity groups within the same slot and swap one cabin between them. If the total schedule score improves, keep the swap. This is a local search that converges to a local optimum.</p>
+        <p><strong>Phase 3 — Random restarts:</strong> Repeat phases 1 and 2 multiple times (default: 8 restarts, each with 6,000 hill-climb iterations). Keep the best schedule found across all restarts. More restarts + more passes = better results but slower runtime.</p>
+        <p>This approach is a standard <em>iterated local search</em> applied to a combinatorial assignment problem. It is not guaranteed to find the global optimum but reliably finds high-quality solutions for this problem size in under 3 seconds.</p>
+      </div>
+
+      <div class="how-section">
+        <h3>Tiebreaker: submission order</h3>
+        <p>The tiebreaker weight (0.001 per position) is intentionally tiny — small enough to never override a genuine preference difference, but large enough to deterministically break ties. The top 3 girl cabin submitters and top 3 guy cabin submitters are given positions 1-3 and 1-3 respectively within their gender group, set on the Setup tab.</p>
+      </div>
+
+      <div class="how-section">
+        <h3>Repeat penalty rationale</h3>
+        <p>A repeat penalty of 30 means repeating an activity costs as much as the difference between a rank-1 and rank-4 assignment. The optimizer will therefore accept a repeat only if every non-repeat option scores more than 30 points worse — roughly equivalent to being forced to a rank-4 vs rank-1 choice. In practice, repeats occur only when capacity is very tight across the week.</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="showTab('setup')">Continue to Setup &rarr;</button>
+</div>
+
+<!-- SETUP -->
+<div id="page-setup" class="page">
+
+  <div class="card">
+    <h2>Early Submitters (Tiebreaker Priority)</h2>
+    <p style="font-size:0.825rem;color:#666;margin-bottom:1rem">Select which 3 guy cabins and which 3 girl cabins turned in their slips first. These get a tiny tiebreaker advantage when scores are otherwise equal.</p>
+    <div class="grid2">
+      <div>
+        <div style="margin-bottom:0.5rem"><span class="pill-guy">Guy cabins</span> &nbsp;R1 R2 R3 R4 R5 R6 &nbsp; F1 F2 F3 F4 F5 F6</div>
+        <label>1st guy cabin submitted</label>
+        <select id="g1" style="margin-bottom:0.5rem">GCABINS</select>
+        <label>2nd guy cabin submitted</label>
+        <select id="g2" style="margin-bottom:0.5rem">GCABINS</select>
+        <label>3rd guy cabin submitted</label>
+        <select id="g3">GCABINS</select>
+      </div>
+      <div>
+        <div style="margin-bottom:0.5rem"><span class="pill-girl">Girl cabins</span> &nbsp;S1 S2 S3 S4 S5 S6 &nbsp; E1 E2 E3 E4 E5 E6</div>
+        <label>1st girl cabin submitted</label>
+        <select id="e1" style="margin-bottom:0.5rem">GCABINS2</select>
+        <label>2nd girl cabin submitted</label>
+        <select id="e2" style="margin-bottom:0.5rem">GCABINS2</select>
+        <label>3rd girl cabin submitted</label>
+        <select id="e3">GCABINS2</select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Activity Capacity per Slot</h2>
+    <p style="font-size:0.825rem;color:#666;margin-bottom:0.75rem">Max cabins allowed per activity per time slot. Set to 0 if unavailable in that slot.</p>
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.875rem;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="setAll(2)">Fill all with 2</button>
+      <button class="btn btn-sm" onclick="setAll(3)">Fill all with 3</button>
+      <button class="btn btn-sm" onclick="setAll(4)">Fill all with 4</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="cap-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;min-width:155px">Activity</th>
+            <th>Mon<br>Morn</th>
+            <th>Mon<br>Aft 1</th>
+            <th>Mon<br>Aft 2</th>
+            <th>Tue<br>Morn</th>
+            <th>Tue<br>Aft</th>
+            <th>Wed<br>Aft</th>
+            <th>Thu<br>Aft</th>
+            <th>Fri<br>Aft</th>
+          </tr>
+        </thead>
+        <tbody id="cap-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="showTab('cabins')">Continue to Cabin Preferences &rarr;</button>
+</div>
+
+<!-- CABINS -->
+<div id="page-cabins" class="page">
+  <div class="alert alert-info">Cabins are pre-set with your 24 standard names. Uncheck any cabin not present this week. Expand each to set their activity rankings.</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+    <strong style="font-size:0.95rem">Cabin Rankings</strong>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="expandAll()">Expand all</button>
+      <button class="btn btn-sm" onclick="collapseAll()">Collapse all</button>
+      <button class="btn btn-sm btn-primary" onclick="showTab('optimize')">Continue to Optimize &rarr;</button>
+    </div>
+  </div>
+  <div id="cabin-list"></div>
+</div>
+
+<!-- OPTIMIZE -->
+<div id="page-optimize" class="page">
+  <div class="card">
+    <h2>Scoring Weights</h2>
+    <p style="font-size:0.825rem;color:#666;margin-bottom:0.875rem">Pre-tuned defaults work well. Adjust if needed.</p>
+    <div class="grid3">
+      <div><label>Top 3 bonus multiplier</label><input type="number" id="w-top" value="3" min="1" max="20" step="0.5"></div>
+      <div><label>Bottom 2 penalty multiplier</label><input type="number" id="w-bot" value="4" min="1" max="20" step="0.5"></div>
+      <div><label>Repeat activity penalty</label><input type="number" id="w-rep" value="30" min="0" max="100" step="5"></div>
+    </div>
+    <div class="grid3" style="margin-top:0.75rem">
+      <div><label>Pool morning penalty</label><input type="number" id="w-pool" value="15" min="0" max="50" step="5"></div>
+      <div><label>Hill-climb passes per restart</label><input type="number" id="w-passes" value="6000" min="1000" max="30000" step="1000"></div>
+      <div><label>Random restarts</label><input type="number" id="w-restarts" value="8" min="1" max="20"></div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <button class="btn btn-primary" id="run-btn" onclick="runOptimizer()">Run Optimizer</button>
+    <span id="run-status" style="font-size:0.825rem;color:#666"></span>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="page-results" class="page">
+  <div id="results-content">
+    <div class="alert alert-info">Run the optimizer first to see results.</div>
+  </div>
+</div>
+
+<script>
+var ACTS = [
+  'Climbing Wall',
+  'Crafts & Camp Store',
+  'Laser Tag',
+  'Pool',
+  'Zayante Ropes Course',
+  'Archery',
+  'Volleyball (Sand Court)',
+  'Skate Pad & Gaga Ball',
+  'Just Dance (Forum)',
+  'Popsicles & Walk to Cross',
+  'Sports Court',
+  'Games in Lodge',
+  'Rec Field'
+];
+
+var SLOTS = [
+  { id: 's0', label: 'Mon Morning',   day: 'Monday',    time: 'Morning',     morning: true  },
+  { id: 's1', label: 'Mon Aft 1',     day: 'Monday',    time: 'Afternoon 1', morning: false },
+  { id: 's2', label: 'Mon Aft 2',     day: 'Monday',    time: 'Afternoon 2', morning: false },
+  { id: 's3', label: 'Tue Morning',   day: 'Tuesday',   time: 'Morning',     morning: true  },
+  { id: 's4', label: 'Tue Afternoon', day: 'Tuesday',   time: 'Afternoon',   morning: false },
+  { id: 's5', label: 'Wed Afternoon', day: 'Wednesday', time: 'Afternoon',   morning: false },
+  { id: 's6', label: 'Thu Afternoon', day: 'Thursday',  time: 'Afternoon',   morning: false },
+  { id: 's7', label: 'Fri Afternoon', day: 'Friday',    time: 'Afternoon',   morning: false }
+];
+
+var POOL_IDX = 3;
+
+var ALL_CABIN_DEFS = [
+  { name: 'R1', gender: 'guy' }, { name: 'R2', gender: 'guy' }, { name: 'R3', gender: 'guy' },
+  { name: 'R4', gender: 'guy' }, { name: 'R5', gender: 'guy' }, { name: 'R6', gender: 'guy' },
+  { name: 'F1', gender: 'guy' }, { name: 'F2', gender: 'guy' }, { name: 'F3', gender: 'guy' },
+  { name: 'F4', gender: 'guy' }, { name: 'F5', gender: 'guy' }, { name: 'F6', gender: 'guy' },
+  { name: 'S1', gender: 'girl' }, { name: 'S2', gender: 'girl' }, { name: 'S3', gender: 'girl' },
+  { name: 'S4', gender: 'girl' }, { name: 'S5', gender: 'girl' }, { name: 'S6', gender: 'girl' },
+  { name: 'E1', gender: 'girl' }, { name: 'E2', gender: 'girl' }, { name: 'E3', gender: 'girl' },
+  { name: 'E4', gender: 'girl' }, { name: 'E5', gender: 'girl' }, { name: 'E6', gender: 'girl' }
+];
+
+var GUY_NAMES = ['R1','R2','R3','R4','R5','R6','F1','F2','F3','F4','F5','F6'];
+var GIRL_NAMES = ['S1','S2','S3','S4','S5','S6','E1','E2','E3','E4','E5','E6'];
+
+var caps = [];
+var cabins = [];
+var bestSchedule = null;
+
+function initCaps() {
+  caps = [];
+  for (var a = 0; a < ACTS.length; a++) {
+    caps.push([]);
+    for (var s = 0; s < SLOTS.length; s++) caps[a].push(2);
+  }
+}
+
+function renderCapTable() {
+  var html = '';
+  for (var a = 0; a < ACTS.length; a++) {
+    html += '<tr><td>' + ACTS[a] + '</td>';
+    for (var s = 0; s < SLOTS.length; s++) {
+      html += '<td style="text-align:center"><input type="number" min="0" max="40" value="' + caps[a][s] + '" style="width:48px;text-align:center;padding:4px" data-a="' + a + '" data-s="' + s + '" onchange="updateCap(this)"></td>';
+    }
+    html += '</tr>';
+  }
+  document.getElementById('cap-body').innerHTML = html;
+}
+
+function updateCap(el) {
+  caps[parseInt(el.getAttribute('data-a'))][parseInt(el.getAttribute('data-s'))] = parseInt(el.value) || 0;
+}
+
+function setAll(n) {
+  for (var a = 0; a < ACTS.length; a++) for (var s = 0; s < SLOTS.length; s++) caps[a][s] = n;
+  renderCapTable();
+}
+
+function populateSetupDropdowns() {
+  var gHtml = '<option value="">-- pick cabin --</option>';
+  for (var i = 0; i < GUY_NAMES.length; i++) gHtml += '<option value="' + GUY_NAMES[i] + '">' + GUY_NAMES[i] + '</option>';
+  var eHtml = '<option value="">-- pick cabin --</option>';
+  for (var i = 0; i < GIRL_NAMES.length; i++) eHtml += '<option value="' + GIRL_NAMES[i] + '">' + GIRL_NAMES[i] + '</option>';
+  document.getElementById('g1').innerHTML = gHtml;
+  document.getElementById('g2').innerHTML = gHtml;
+  document.getElementById('g3').innerHTML = gHtml;
+  document.getElementById('e1').innerHTML = eHtml;
+  document.getElementById('e2').innerHTML = eHtml;
+  document.getElementById('e3').innerHTML = eHtml;
+}
+
+function getSubmissionPriority() {
+  var priority = {};
+  var gEarly = [
+    document.getElementById('g1').value,
+    document.getElementById('g2').value,
+    document.getElementById('g3').value
+  ];
+  var eEarly = [
+    document.getElementById('e1').value,
+    document.getElementById('e2').value,
+    document.getElementById('e3').value
+  ];
+  for (var i = 0; i < gEarly.length; i++) if (gEarly[i]) priority[gEarly[i]] = 3 - i;
+  for (var i = 0; i < eEarly.length; i++) if (eEarly[i]) priority[eEarly[i]] = 3 - i;
+  return priority;
+}
+
+function initCabins() {
+  cabins = [];
+  for (var i = 0; i < ALL_CABIN_DEFS.length; i++) {
+    var def = ALL_CABIN_DEFS[i];
+    var ranks = [];
+    for (var j = 0; j < ACTS.length; j++) ranks.push(j + 1);
+    cabins.push({ name: def.name, gender: def.gender, ranks: ranks, active: true, collapsed: true });
+  }
+}
+
+function rbClass(rank) {
+  if (rank <= 3) return 'rb-top';
+  if (rank >= 12) return 'rb-bot';
+  if (rank >= 8) return 'rb-mid';
+  return 'rb-neu';
+}
+
+function renderCabins() {
+  var groups = [
+    { label: 'Guy Cabins', badgeClass: 'badge-guy', obClass: 'ob-guy', filter: 'guy' },
+    { label: 'Girl Cabins', badgeClass: 'badge-girl', obClass: 'ob-girl', filter: 'girl' }
+  ];
+  var html = '';
+  for (var gi = 0; gi < groups.length; gi++) {
+    var grp = groups[gi];
+    html += '<div class="cabin-group"><div class="group-header"><span class="group-badge ' + grp.badgeClass + '">' + grp.label + '</span></div>';
+    for (var ci = 0; ci < cabins.length; ci++) {
+      var cabin = cabins[ci];
+      if (cabin.gender !== grp.filter) continue;
+      html += '<div class="cabin-entry' + (cabin.active ? '' : ' disabled-entry') + '" id="ce-' + ci + '">';
+      html += '<div class="cabin-header">';
+      html += '<div style="display:flex;align-items:center;gap:9px">';
+      html += '<input type="checkbox" class="cabin-check"' + (cabin.active ? ' checked' : '') + ' onchange="toggleActive(' + ci + ',this)" style="pointer-events:auto">';
+      html += '<div class="order-badge ' + grp.obClass + '">' + cabin.name + '</div>';
+      html += '<span style="font-size:0.825rem;color:#888">' + (cabin.active ? 'Present this week' : 'Not attending') + '</span>';
+      html += '</div>';
+      html += '<div style="display:flex;gap:0.5rem">';
+      if (cabin.active) {
+        html += '<button class="btn btn-sm" onclick="toggleCabin(' + ci + ')">' + (cabin.collapsed ? 'Edit ranks' : 'Collapse') + '</button>';
+      }
+      html += '</div></div>';
+      if (cabin.active && !cabin.collapsed) {
+        html += '<div class="rank-grid">';
+        for (var ai = 0; ai < ACTS.length; ai++) {
+          var rank = cabin.ranks[ai];
+          html += '<div class="rank-row">';
+          html += '<div class="rank-badge ' + rbClass(rank) + '" id="rb-' + ci + '-' + ai + '">' + rank + '</div>';
+          html += '<label>' + ACTS[ai] + '</label>';
+          html += '<select data-ci="' + ci + '" data-ai="' + ai + '" onchange="updateRank(this)">';
+          for (var r = 1; r <= 13; r++) html += '<option value="' + r + '"' + (rank === r ? ' selected' : '') + '>' + r + '</option>';
+          html += '</select></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('cabin-list').innerHTML = html;
+}
+
+function toggleActive(ci, el) {
+  cabins[ci].active = el.checked;
+  cabins[ci].collapsed = true;
+  renderCabins();
+}
+
+function updateRank(el) {
+  var ci = parseInt(el.getAttribute('data-ci'));
+  var ai = parseInt(el.getAttribute('data-ai'));
+  cabins[ci].ranks[ai] = parseInt(el.value);
+  var badge = document.getElementById('rb-' + ci + '-' + ai);
+  if (badge) { badge.textContent = el.value; badge.className = 'rank-badge ' + rbClass(parseInt(el.value)); }
+}
+
+function toggleCabin(ci) { cabins[ci].collapsed = !cabins[ci].collapsed; renderCabins(); }
+function expandAll() { for (var i = 0; i < cabins.length; i++) if (cabins[i].active) cabins[i].collapsed = false; renderCabins(); }
+function collapseAll() { for (var i = 0; i < cabins.length; i++) cabins[i].collapsed = true; renderCabins(); }
+
+function showTab(name) {
+  var names = ['how','setup','cabins','optimize','results'];
+  for (var i = 0; i < names.length; i++) {
+    document.getElementById('page-' + names[i]).classList.remove('active');
+    document.getElementById('tab-' + names[i]).classList.remove('active');
+  }
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function toggleTech() {
+  var sec = document.getElementById('tech-section');
+  var btn = document.querySelector('.tech-toggle');
+  if (sec.style.display === 'none') { sec.style.display = 'block'; btn.innerHTML = '&#9650; Hide technical detail'; }
+  else { sec.style.display = 'none'; btn.innerHTML = '&#9660; Show technical detail'; }
+}
+
+// ---- OPTIMIZER ----
+
+function getActiveCabins() {
+  var active = [];
+  for (var i = 0; i < cabins.length; i++) if (cabins[i].active) active.push(i);
+  return active;
+}
+
+function cabinScore(ci, ai, si, doneActs, priority) {
+  var rank = cabins[ci].ranks[ai];
+  var wTop = parseFloat(document.getElementById('w-top').value) || 3;
+  var wBot = parseFloat(document.getElementById('w-bot').value) || 4;
+  var wRep = parseFloat(document.getElementById('w-rep').value) || 30;
+  var wPool = parseFloat(document.getElementById('w-pool').value) || 15;
+
+  var score = 14 - rank;
+  if (rank <= 3) score += (4 - rank) * wTop;
+  if (rank >= 12) score -= (rank - 11) * wBot;
+  if (ai === POOL_IDX && SLOTS[si].morning) score -= wPool;
+
+  var repeatCount = 0;
+  for (var k = 0; k < doneActs.length; k++) if (doneActs[k] === ai) repeatCount++;
+  if (repeatCount > 0) score -= repeatCount * wRep;
+
+  var pri = priority[cabins[ci].name] || 0;
+  score += pri * 0.001;
+
+  return score;
+}
+
+function totalScore(sched, priority) {
+  var activeCIs = getActiveCabins();
+  var total = 0;
+  for (var idx = 0; idx < activeCIs.length; idx++) {
+    var ci = activeCIs[idx];
+    var done = [];
+    for (var si = 0; si < SLOTS.length; si++) {
+      for (var ai = 0; ai < ACTS.length; ai++) {
+        var list = sched[si][ai];
+        for (var k = 0; k < list.length; k++) {
+          if (list[k] === ci) { total += cabinScore(ci, ai, si, done, priority); done.push(ai); }
+        }
+      }
+    }
+  }
+  return total;
+}
+
+function buildSchedule(priority) {
+  var activeCIs = getActiveCabins();
+  var sched = [];
+  for (var si = 0; si < SLOTS.length; si++) {
+    var row = [];
+    for (var ai = 0; ai < ACTS.length; ai++) row.push([]);
+    sched.push(row);
+  }
+  var usage = [];
+  for (var si = 0; si < SLOTS.length; si++) {
+    var row = [];
+    for (var ai = 0; ai < ACTS.length; ai++) row.push(0);
+    usage.push(row);
+  }
+  var cabinDone = {};
+  for (var idx = 0; idx < activeCIs.length; idx++) cabinDone[activeCIs[idx]] = [];
+
+  for (var si = 0; si < SLOTS.length; si++) {
+    var order = activeCIs.slice();
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    for (var oi = 0; oi < order.length; oi++) {
+      var ci = order[oi];
+      var candidates = [];
+      for (var ai = 0; ai < ACTS.length; ai++) {
+        if (caps[ai][si] > 0 && usage[si][ai] < caps[ai][si]) {
+          candidates.push({ ai: ai, score: cabinScore(ci, ai, si, cabinDone[ci], priority) + Math.random() * 1.5 });
+        }
+      }
+      if (candidates.length === 0) continue;
+      candidates.sort(function(a, b) { return b.score - a.score; });
+      var chosen = candidates[0].ai;
+      sched[si][chosen].push(ci);
+      usage[si][chosen]++;
+      cabinDone[ci].push(chosen);
+    }
+  }
+  return sched;
+}
+
+function hillClimb(sched, priority) {
+  var passes = parseInt(document.getElementById('w-passes').value) || 6000;
+  var best = JSON.parse(JSON.stringify(sched));
+  var bestSc = totalScore(best, priority);
+  for (var iter = 0; iter < passes; iter++) {
+    var si = Math.floor(Math.random() * SLOTS.length);
+    var occupied = [];
+    for (var ai = 0; ai < ACTS.length; ai++) if (best[si][ai].length > 0) occupied.push(ai);
+    if (occupied.length < 2) continue;
+    var i1 = Math.floor(Math.random() * occupied.length);
+    var i2 = Math.floor(Math.random() * occupied.length);
+    if (i1 === i2) continue;
+    var ai1 = occupied[i1]; var ai2 = occupied[i2];
+    var list1 = best[si][ai1]; var list2 = best[si][ai2];
+    if (!list1.length || !list2.length) continue;
+    var ci1 = list1[Math.floor(Math.random() * list1.length)];
+    var ci2 = list2[Math.floor(Math.random() * list2.length)];
+    var ns = JSON.parse(JSON.stringify(best));
+    ns[si][ai1] = ns[si][ai1].filter(function(x) { return x !== ci1; });
+    ns[si][ai2] = ns[si][ai2].filter(function(x) { return x !== ci2; });
+    ns[si][ai1].push(ci2); ns[si][ai2].push(ci1);
+    if (ns[si][ai1].length <= caps[ai1][si] && ns[si][ai2].length <= caps[ai2][si]) {
+      var newSc = totalScore(ns, priority);
+      if (newSc > bestSc) { best = ns; bestSc = newSc; }
+    }
+  }
+  return { sched: best, score: bestSc };
+}
+
+function runOptimizer() {
+  var activeCIs = getActiveCabins();
+  if (activeCIs.length === 0) { alert('No active cabins! Check at least one cabin on the Cabin Preferences tab.'); return; }
+  var btn = document.getElementById('run-btn');
+  var status = document.getElementById('run-status');
+  btn.innerHTML = '<span class="spinner"></span>Running...';
+  btn.disabled = true;
+  status.textContent = '';
+  setTimeout(function() {
+    var priority = getSubmissionPriority();
+    var restarts = parseInt(document.getElementById('w-restarts').value) || 8;
+    var globalBest = null; var globalScore = -Infinity;
+    for (var r = 0; r < restarts; r++) {
+      var init = buildSchedule(priority);
+      var result = hillClimb(init, priority);
+      if (result.score > globalScore) { globalBest = result.sched; globalScore = result.score; }
+    }
+    bestSchedule = globalBest;
+    btn.innerHTML = 'Run Optimizer';
+    btn.disabled = false;
+    status.textContent = 'Done! Score: ' + Math.round(globalScore);
+    renderResults(globalBest);
+    showTab('results');
+  }, 50);
+}
+
+function renderResults(sched) {
+  var activeCIs = getActiveCabins();
+  var stats = [];
+  for (var idx = 0; idx < activeCIs.length; idx++) {
+    var ci = activeCIs[idx];
+    var myActs = [];
+    for (var si = 0; si < SLOTS.length; si++) {
+      for (var ai = 0; ai < ACTS.length; ai++) {
+        var list = sched[si][ai];
+        for (var k = 0; k < list.length; k++) {
+          if (list[k] === ci) myActs.push({ si: si, ai: ai, rank: cabins[ci].ranks[ai] });
+        }
+      }
+    }
+    var sum = 0;
+    for (var m = 0; m < myActs.length; m++) sum += myActs[m].rank;
+    var avgRank = myActs.length ? sum / myActs.length : 0;
+    var top3 = 0; var bot2 = 0;
+    for (var m = 0; m < myActs.length; m++) { if (myActs[m].rank <= 3) top3++; if (myActs[m].rank >= 12) bot2++; }
+    var seen = {}; var repeats = 0;
+    for (var m = 0; m < myActs.length; m++) { if (seen[myActs[m].ai]) repeats++; seen[myActs[m].ai] = true; }
+    stats.push({ ci: ci, name: cabins[ci].name, gender: cabins[ci].gender, myActs: myActs, avgRank: avgRank, top3: top3, bot2: bot2, repeats: repeats });
+  }
+
+  var totalTop3 = 0; var totalBot2 = 0; var totalRepeats = 0; var rankSum = 0;
+  for (var i = 0; i < stats.length; i++) { totalTop3 += stats[i].top3; totalBot2 += stats[i].bot2; totalRepeats += stats[i].repeats; rankSum += stats[i].avgRank; }
+  var avgOverall = stats.length ? rankSum / stats.length : 0;
+
+  var slotHtml = '';
+  for (var si = 0; si < SLOTS.length; si++) {
+    var slot = SLOTS[si];
+    var inner = '';
+    for (var ai = 0; ai < ACTS.length; ai++) {
+      var list = sched[si][ai];
+      if (!list.length) continue;
+      inner += '<div style="margin-bottom:7px"><div style="font-size:0.775rem;font-weight:600;color:#2d5a27;margin-bottom:3px">' + ACTS[ai] + '</div>';
+      for (var k = 0; k < list.length; k++) {
+        var ci = list[k];
+        var rank = cabins[ci].ranks[ai];
+        var isRepeat = false;
+        for (var psi = 0; psi < si && !isRepeat; psi++) { var pl = sched[psi][ai]; for (var pk = 0; pk < pl.length; pk++) if (pl[pk] === ci) { isRepeat = true; break; } }
+        inner += '<span class="cabin-pill' + (isRepeat ? ' repeat' : '') + '">' + cabins[ci].name + ' <span style="opacity:0.6">#' + rank + '</span></span>';
+      }
+      inner += '</div>';
+    }
+    if (!inner) inner = '<span style="color:#bbb;font-size:0.8rem">No assignments</span>';
+    slotHtml += '<tr><td><div style="font-weight:600;color:#2d5a27">' + slot.day + '</div><div style="font-size:0.775rem;color:#888">' + slot.time + '</div></td><td>' + inner + '</td></tr>';
+  }
+
+  var sortedStats = stats.slice().sort(function(a, b) { return a.avgRank - b.avgRank; });
+  var satHtml = '';
+  for (var i = 0; i < sortedStats.length; i++) {
+    var st = sortedStats[i];
+    var pct = Math.round((1 - (st.avgRank - 1) / 12) * 100);
+    var genderPill = st.gender === 'guy' ? '<span class="pill-guy">Guy</span>' : '<span class="pill-girl">Girl</span>';
+    satHtml += '<tr><td>' + st.name + ' ' + genderPill + '</td><td>' + st.avgRank.toFixed(1) + '</td><td>' + st.top3 + '/8</td>';
+    satHtml += '<td>' + (st.bot2 > 0 ? '<span style="color:#c0392b;font-weight:600">' + st.bot2 + '</span>' : '0') + '</td>';
+    satHtml += '<td>' + (st.repeats > 0 ? '<span style="color:#e67e22;font-weight:600">' + st.repeats + '</span>' : '0') + '</td>';
+    satHtml += '<td style="min-width:80px"><div class="bar-wrap"><div class="bar-fill" style="width:' + pct + '%"></div></div></td></tr>';
+  }
+
+  var warnHtml = totalRepeats > 0 ? '<div class="alert alert-warn" style="margin-bottom:0.75rem">&#9888; ' + totalRepeats + ' repeat assignment(s). Yellow pills = repeat. Increase capacity or re-run to reduce.</div>' : '';
+
+  document.getElementById('results-content').innerHTML =
+    '<div class="score-grid">' +
+      '<div class="score-card"><div class="val">' + avgOverall.toFixed(1) + '</div><div class="lbl">Avg rank assigned</div></div>' +
+      '<div class="score-card"><div class="val">' + totalTop3 + '</div><div class="lbl">Top 3 hits</div></div>' +
+      '<div class="score-card"><div class="val" style="color:' + (totalBot2 > 0 ? '#c0392b' : '#2d5a27') + '">' + totalBot2 + '</div><div class="lbl">Bottom 2 hits</div></div>' +
+      '<div class="score-card"><div class="val" style="color:' + (totalRepeats > 0 ? '#e67e22' : '#2d5a27') + '">' + totalRepeats + '</div><div class="lbl">Repeats</div></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">' +
+        '<h2>Weekly Schedule</h2>' +
+        '<div style="display:flex;gap:0.5rem">' +
+          '<button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>' +
+          '<button class="btn btn-sm btn-primary" onclick="showTab(\'optimize\')">Re-run</button>' +
+        '</div>' +
+      '</div>' + warnHtml +
+      '<table class="schedule-table"><thead><tr><th style="width:120px">Slot</th><th>Activity and Cabin Assignments (rank shown)</th></tr></thead><tbody>' + slotHtml + '</tbody></table>' +
+    '</div>' +
+    '<div class="card"><h2>Cabin Satisfaction</h2><p style="font-size:0.8rem;color:#666;margin-bottom:0.75rem">Sorted best to worst. Lower avg rank = closer to their top choices.</p>' +
+    '<table class="sat-table"><thead><tr><th>Cabin</th><th>Avg Rank</th><th>Top 3 Hits</th><th>Bot 2 Hits</th><th>Repeats</th><th>Satisfaction</th></tr></thead><tbody>' + satHtml + '</tbody></table></div>';
+}
+
+function exportCSV() {
+  if (!bestSchedule) return;
+
+  var activeCIs = getActiveCabins();
+  var slotHeaders = [];
+  for (var si = 0; si < SLOTS.length; si++) slotHeaders.push(SLOTS[si].label);
+
+  var rows = [];
+  var header = ['Cabin'].concat(slotHeaders);
+  rows.push(header);
+
+  for (var idx = 0; idx < activeCIs.length; idx++) {
+    var ci = activeCIs[idx];
+    var row = [cabins[ci].name];
+    for (var si = 0; si < SLOTS.length; si++) {
+      var assigned = '';
+      for (var ai = 0; ai < ACTS.length; ai++) {
+        var list = bestSchedule[si][ai];
+        for (var k = 0; k < list.length; k++) {
+          if (list[k] === ci) { assigned = ACTS[ai]; break; }
+        }
+        if (assigned) break;
+      }
+      row.push(assigned);
+    }
+    rows.push(row);
+  }
+
+  var csv = '';
+  for (var r = 0; r < rows.length; r++) {
+    var cells = [];
+    for (var c = 0; c < rows[r].length; c++) cells.push('"' + String(rows[r][c]).replace(/"/g, '""') + '"');
+    csv += cells.join(',') + '\n';
+  }
+
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'camp_schedule.csv'; a.click();
+}
+
+// Init
+initCaps();
+renderCapTable();
+populateSetupDropdowns();
+initCabins();
+renderCabins();
+</script>
+</body>
+</html>
